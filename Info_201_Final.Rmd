@@ -13,33 +13,26 @@ library(dplyr)
 habits_df <- read_csv("student_habits_performance.csv")
 social_df <- read_csv("smmh.csv")
 
-# Clean & bin habits_df
 habits_df <- habits_df %>%
   mutate(
     age = as.numeric(age),
-    social_media_hours_binned = case_when(
-      social_media_hours <= 1 ~ "0-1 hours",
-      social_media_hours <= 2 ~ "1-2 hours",
-      social_media_hours <= 3 ~ "2-3 hours",
-      social_media_hours <= 4 ~ "3-4 hours",
-      TRUE ~ "4+ hours"
-    ),
-    age_range = case_when(
-      age <= 17 ~ "<18",
-      age <= 21 ~ "18-21",
-      age <= 25 ~ "22-25",
-      TRUE ~ "26+"
-    )
-  )
+    social_media_hours_binned = cut(
+      social_media_hours,
+      breaks = c(-Inf, 1, 2, 3, 4, Inf),
+      labels = c("0-1 hours", "1-2 hours", "2-3 hours", "3-4 hours", "4+ hours"),
+      right = TRUE),
+    age_range = cut(
+      age,
+      breaks = c(-Inf, 17, 21, 25, Inf),
+      labels = c("<18", "18-21", "22-25", "26+"),
+      right = TRUE))
 
-# Clean & bin social_df
 social_df_clean <- social_df %>%
   select(
     age = `1. What is your age?`,
     social_media_hours_raw = `8. What is the average time you spend on social media every day?`,
     depression_score = `18. How often do you feel depressed or down?`,
-    sleep_issues_score = `20. On a scale of 1 to 5, how often do you face issues regarding sleep?`
-  ) %>%
+    sleep_issues_score = `20. On a scale of 1 to 5, how often do you face issues regarding sleep?`) %>%
   mutate(
     age = as.numeric(age),
     social_media_hours_raw = tolower(trimws(social_media_hours_raw)),
@@ -59,12 +52,10 @@ social_df_clean <- social_df %>%
     )
   )
 
-# Merge on binned social media hours and age range
 merged_df <- inner_join(
-  habits_df %>% select(-gender),  # drop gender if present
+  habits_df %>% select(-gender),
   social_df_clean,
-  by = c("social_media_hours_binned", "age_range")
-)
+  by = c("social_media_hours_binned", "age_range"))
 
 merged_df <- merged_df %>%
   select(-age.x, -age.y, -student_id, -social_media_hours_raw)
