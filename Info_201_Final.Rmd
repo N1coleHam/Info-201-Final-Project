@@ -1,0 +1,7 @@
+---
+title: "Final Project"
+author: "Nicole Ham, Ruslana Korolov, Hanna Pan"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
