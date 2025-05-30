@@ -4,11 +4,12 @@ author: "Nicole Ham, Ruslana Korolov, Hanna Pan"
 date: "`r Sys.Date()`"
 output: github_document
 ---
-
 ```{r}
 library(tidyverse)
+library(dplyr)
+```
 
-# Load datasets
+```{r}
 habits_df <- read_csv("student_habits_performance.csv")
 social_df <- read_csv("smmh.csv")
 
@@ -66,7 +67,7 @@ merged_df <- inner_join(
 )
 
 merged_df <- merged_df %>%
-  select(-age.x, -age.y, -student_id)
+  select(-age.x, -age.y, -student_id, -social_media_hours_raw)
 
 ```
 
