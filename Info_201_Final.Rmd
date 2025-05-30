@@ -65,6 +65,9 @@ merged_df <- inner_join(
   by = c("social_media_hours_binned", "age_range")
 )
 
+merged_df <- merged_df %>%
+  select(-age.x, -age.y, -student_id)
+
 ```
 
 ```{r}
