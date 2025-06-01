@@ -1,5 +1,122 @@
 ---
-title: "Ruslana_Analysis"
-output: html_document
+title: "RQ1"
+author: "Nicole Ham, Ruslana Korolov, Hanna Pan"
+date: "`r Sys.Date()`"
+output: github_document
 ---
+```{r}
+library(tidyverse)
+library(dplyr)
+library(stringr)
+```
 
+```{r}
+habits_df <- read_csv("student_habits_performance.csv")
+social_df <- read_csv("smmh.csv")
+
+habits_df <- habits_df %>%
+  mutate(
+    age = as.numeric(age),
+    soc_range = cut(
+      social_media_hours,
+      breaks = c(-Inf, 1, 2, 3, 4, Inf),
+      labels = c("0-1 hours", "1-2 hours", "2-3 hours", "3-4 hours", "4+ hours"),
+      right = TRUE),
+    age_range = cut(
+      age,
+      breaks = c(-Inf, 17, 21, 25, Inf),
+      labels = c("<18", "18-21", "22-25", "26+"),
+      right = TRUE))
+
+social_df_clean <- social_df %>%
+  mutate(
+    age = as.numeric(`1. What is your age?`),
+    soc_hrs = tolower(trimws(`8. What is the average time you spend on social media every day?`)),
+    soc_num = as.numeric(str_extract(soc_hrs, "\\d+")),
+    soc_range = cut(
+      soc_num,
+      breaks = c(-Inf, 1, 2, 3, 4, Inf),
+      labels = c("0-1 hours", "1-2 hours", "2-3 hours", "3-4 hours", "4+ hours"),
+      right = TRUE
+    ),
+    age_range = cut(
+      age,
+      breaks = c(-Inf, 17, 21, 25, Inf),
+      labels = c("<18", "18-21", "22-25", "26+"),
+      right = TRUE))
+
+
+merged_df <- inner_join(
+  habits_df %>% select(-gender),
+  social_df_clean,
+  by = c("soc_range", "age_range"))
+
+merged_df <- merged_df %>%
+  select(-age.x, 
+         -age.y, 
+         -student_id, 
+         -soc_hrs, 
+         -soc_num, 
+         -Timestamp, 
+         -`1. What is your age?`,
+         -`2. Gender`,
+         -`3. Relationship Status`,
+         -`5. What type of organizations are you affiliated with?`,
+         -`6. Do you use social media?`,
+         -`8. What is the average time you spend on social media every day?`,
+         -parental_education_level)
+
+```
+
+
+```{r}
+head(merged_df)
+names(merged_df)
+# get rid of timestamp, 1. what is your age?, 2. gender, 3. relationship status, # parental education level, 8. how many hours u spend on social media, social_media_hours_num, 5. affiliated orgs, 6. do u use social media,
+```
+RQ1: What is the factor that contributes to the greatest academic performance?
+
+```{r}
+# Multiple Linear Regression using ggcorrplot
+library(ggcorrplot)
+
+model <- lm(exam_score ~ study_hours_per_day + social_media_hours + netflix_hours +
+            part_time_job + attendance_percentage + sleep_hours + diet_quality +
+            exercise_frequency + internet_quality + mental_health_rating,
+            data = merged_df)
+
+summary(model)
+```
+
+```{r}
+# Feature Importance via Machine Learning
+library(randomForest)
+
+rf_data <- merged_df %>%
+  select(exam_score, study_hours_per_day, social_media_hours, netflix_hours,
+         part_time_job, attendance_percentage, sleep_hours, diet_quality,
+         exercise_frequency, internet_quality, mental_health_rating)
+
+rf_data$part_time_job <- as.factor(rf_data$part_time_job)
+rf_data$diet_quality <- as.factor(rf_data$diet_quality)
+rf_data$internet_quality <- as.factor(rf_data$internet_quality)
+
+rf_model <- randomForest(exam_score ~ ., data = rf_data, importance = TRUE)
+
+importance(rf_model)
+varImpPlot(rf_model)
+```
+
+```{r}
+# Correlation Heatmap using RF model
+importance_df <- as.data.frame(importance(rf_model)) %>%
+  rownames_to_column("variable") %>%
+  arrange(desc(`%IncMSE`))
+
+ggplot(importance_df, aes(x = reorder(variable, `%IncMSE`), y = `%IncMSE`)) +
+  geom_col(fill = "skyblue") +
+  coord_flip() +
+  labs(title = "Variable Importance (%IncMSE)",
+       x = "Variable", y = "% Increase in MSE if Removed")
+
+```
