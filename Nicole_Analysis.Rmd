@@ -1,5 +1,121 @@
 ---
 title: "Nicole_Analysis"
-output: html_document
+author: "Nicole Ham"
+date: "`r Sys.Date()`"
+output: github_document
 ---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(stringr)
+```
+
+```{r}
+habits_df <- read_csv("student_habits_performance.csv")
+social_df <- read_csv("smmh.csv")
+
+habits_df <- habits_df %>%
+  mutate(
+    age = as.numeric(age),
+    soc_range = cut(
+      social_media_hours,
+      breaks = c(-Inf, 1, 2, 3, 4, Inf),
+      labels = c("0-1 hours", "1-2 hours", "2-3 hours", "3-4 hours", "4+ hours"),
+      right = TRUE),
+    age_range = cut(
+      age,
+      breaks = c(-Inf, 17, 21, 25, Inf),
+      labels = c("<18", "18-21", "22-25", "26+"),
+      right = TRUE))
+
+social_df_clean <- social_df %>%
+  mutate(
+    age = as.numeric(`1. What is your age?`),
+    soc_hrs = tolower(trimws(`8. What is the average time you spend on social media every day?`)),
+    soc_num = as.numeric(str_extract(soc_hrs, "\\d+")),
+    soc_range = cut(
+      soc_num,
+      breaks = c(-Inf, 1, 2, 3, 4, Inf),
+      labels = c("0-1 hours", "1-2 hours", "2-3 hours", "3-4 hours", "4+ hours"),
+      right = TRUE),
+    age_range = cut(
+      age,
+      breaks = c(-Inf, 17, 21, 25, Inf),
+      labels = c("<18", "18-21", "22-25", "26+"),
+      right = TRUE))
+
+merged_df <- inner_join(
+  habits_df %>% select(-gender),
+  social_df_clean,
+  by = c("soc_range", "age_range"))
+
+merged_df <- merged_df %>%
+  select(-age.x, 
+         -age.y, 
+         -student_id, 
+         -soc_hrs, 
+         -soc_num, 
+         -Timestamp, 
+         -`1. What is your age?`,
+         -`2. Gender`,
+         -`3. Relationship Status`,
+         -`5. What type of organizations are you affiliated with?`,
+         -`6. Do you use social media?`,
+         -`8. What is the average time you spend on social media every day?`,
+         -parental_education_level)
+```
+
+```{r}
+head(merged_df)
+names(merged_df)
+```
+
+## Research Question: Is there a correlation between a student’s mental health and their exam score?
+```{r}
+ggplot(merged_df, aes(x = mental_health_rating, y = exam_score)) +
+  geom_point(color = "steelblue",size = 0.3) +
+  geom_smooth(method = "lm", se = TRUE, color = "black") +
+  scale_x_continuous(breaks = 1:10, limits = c(1, 10)) +
+  labs(
+    title = "Relationship Between Mental Health Rating and Exam Score",
+    x = "Mental Health Rating",
+    y = "Exam Score")
+```
+
+### Doing some experimenting here and creating a heatmap
+```{r}
+install.packages("corrplot")
+```
+
+
+```{r}
+library(corrplot)
+
+vars <- c("mental_health_rating", "sleep_hours", "exercise_frequency",
+          "social_media_hours", "exam_score", "attendance_percentage", "study_hours_per_day")
+subset_data <- merged_df[ , vars]
+subset_data <- na.omit(subset_data)
+
+head(subset_data)
+
+cor_matrix <- cor(subset_data, method = "pearson")
+corrplot(cor_matrix, 
+         method = "color", 
+         type = "lower",
+         addCoef.col = "black", 
+         tl.col = "black", 
+         tl.srt = 45)
+```
+How to interpret the data:
+Greater than 1 - positive correlation
+0 - no relationship
+Lower than 1 - negative correlation
+
+i.e
+Exam score and social media hours has a negative correlation of -0.16, meaning that more social media hours means a correlation of a lower exam score
+Exam score and mental health has a positive correlation of 0.32, meaning that the higher the mental health score, the better students do. 
+
+
+
 
