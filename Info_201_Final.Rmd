@@ -37,14 +37,12 @@ social_df_clean <- social_df %>%
       soc_num,
       breaks = c(-Inf, 1, 2, 3, 4, Inf),
       labels = c("0-1 hours", "1-2 hours", "2-3 hours", "3-4 hours", "4+ hours"),
-      right = TRUE
-    ),
+      right = TRUE),
     age_range = cut(
       age,
       breaks = c(-Inf, 17, 21, 25, Inf),
       labels = c("<18", "18-21", "22-25", "26+"),
       right = TRUE))
-
 
 merged_df <- inner_join(
   habits_df %>% select(-gender),
@@ -65,14 +63,10 @@ merged_df <- merged_df %>%
          -`6. Do you use social media?`,
          -`8. What is the average time you spend on social media every day?`,
          -parental_education_level)
-
 ```
 
 
 ```{r}
 head(merged_df)
 names(merged_df)
-# get rid of timestamp, 1. what is your age?, 2. gender, 3. relationship status, # parental education level, 8. how many hours u spend on social media, social_media_hours_num, 5. affiliated orgs, 6. do u use social media,
-
-
 ```
