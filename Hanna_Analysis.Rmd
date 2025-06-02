@@ -59,3 +59,98 @@ merged_df <- merged_df %>%
          -`6. Do you use social media?`,
          -`8. What is the average time you spend on social media every day?`)
 ```
+
+## RQ2: How does the amount of time an individual spends on social media and the impact it has on their mental health?
+
+``` {r}
+# trying to find correlation between social media hours and mental health rating
+
+# plot relationship to see trend
+ggplot(merged_df, aes(x = social_media_hours, y = mental_health_rating)) +
+  geom_jitter(width = 0.3, height = 0.3, alpha = 0.6) +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  labs(
+    title = "Social Media Usage vs Mental Health Rating",
+    x = "Hours Spent on Social Media",
+    y = "Mental Health Rating (1 = Very Poor, 10 = Excellent)"
+  )
+
+
+# group health rating by hour for visualization
+line_df <- merged_df %>%
+  group_by(social_media_hours) %>%
+  summarize(avg_mh = mean(mental_health_rating, na.rm = TRUE))
+
+# line plot
+ggplot(line_df, aes(x = social_media_hours, y = avg_mh)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Average Mental Health Rating by Social Media Hours",
+    x = "Hours on Social Media (per day)",
+    y = "Average Mental Health Rating"
+  )
+
+# correlation between vars
+cor.test(merged_df$social_media_hours, merged_df$mental_health_rating, use = "complete.obs")
+# corr is around 0.002 --> basically no linear trend?? let's explore more
+
+```
+
+``` {r}
+# Trying to see if grouping hours by usage (low, medium, high) will help us find some sort of trend
+grouping_hours <- merged_df %>%
+  mutate(usage_group = case_when(
+    social_media_hours <= 1 ~ "Low (0–1 hrs)",
+    social_media_hours <= 3 ~ "Medium (1–3 hrs)",
+    social_media_hours >= 3 ~ "High (3+ hrs)"))
+
+grouping_hours %>%
+  group_by(usage_group) %>%
+  summarize(avg_mental_health = mean(mental_health_rating, na.rm = TRUE),
+    count = n())
+
+ggplot(grouping_hours, aes(x = usage_group, y = mental_health_rating, fill = usage_group)) +
+  geom_boxplot() +
+  labs(title = "Mental Health Ratings by Social Media Usage (by hours) Group",
+    x = "Usage Group by Hours",
+    y = "Mental Health Rating",
+    fill = "Usage (by hours)")
+
+```
+
+``` {r}
+# Testing if there's a trend between usage and gender with mental health
+
+test_with_gender <- merged_df %>%
+  group_by(gender) %>%
+  summarize(avg_mh = mean(mental_health_rating, na.rm = TRUE),
+    avg_sm = mean(social_media_hours, na.rm = TRUE),
+    n = n())
+
+with_gender_data <- merged_df %>%
+  group_by(social_media_hours, gender) %>%
+  summarize(avg_mh = mean(mental_health_rating, na.rm = TRUE),
+    count = n(),
+    .groups = "drop")
+
+ggplot(with_gender_data, aes(x = social_media_hours, y = avg_mh, color = gender)) +
+  geom_line(size = 0.5) +
+  geom_point() +
+  labs(
+    title = "Average Mental Health Rating by Social Media Usage and Gender",
+    x = "Social Media Usage (by hours)",
+    y = "Average Mental Health Rating",
+    fill = "Gender")
+
+ggplot(merged_df, aes(x = social_media_hours, y = mental_health_rating, color = gender)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(
+    title = "Mental Health vs. Social Media Hours by Gender",
+    x = "Daily Social Media Hours",
+    y = "Mental Health Rating",
+    fill = "Gender")
+
+```
+
