@@ -116,6 +116,45 @@ i.e
 Exam score and social media hours has a negative correlation of -0.16, meaning that more social media hours means a correlation of a lower exam score
 Exam score and mental health has a positive correlation of 0.32, meaning that the higher the mental health score, the better students do. 
 
+```{r}
+vars <- c("sleep_hours", "exercise_frequency", "social_media_hours", 
+          "study_hours_per_day", "attendance_percentage", "exam_score")
+
+long_data <- merged_df %>%
+  select(all_of(vars), mental_health_rating) %>%
+  pivot_longer(cols = all_of(vars), names_to = "Variable", values_to = "Value")
+
+# Step 2: Group by variable and value, then calculate mean mental health
+avg_long <- long_data %>%
+  group_by(Variable, Value) %>%
+  summarise(avg_mental_health = mean(mental_health_rating, na.rm = TRUE), .groups = "drop")
+
+# Step 3: Line plot faceted by variable
+ggplot(avg_long, aes(x = Value, y = avg_mental_health)) +
+  geom_line(color = "black", size = 0.5) +
+  geom_point(color = "blue", size = 0.6) +
+  facet_wrap(~ Variable, scales = "free_x") +
+  labs(title = "How Mental Health Rating Varies by Different Factors",
+       x = "Value of Variable",
+       y = "Average Mental Health Rating")
+```
 
 
+```{r}
+vars <- c("sleep_hours", "exercise_frequency", "social_media_hours", 
+          "study_hours_per_day", "attendance_percentage", "exam_score")
+
+long_data <- merged_df %>%
+  select(all_of(vars), mental_health_rating) %>%
+  pivot_longer(cols = all_of(vars), names_to = "Variable", values_to = "Value")
+
+# Step 2: Plot with correlation/trend lines
+ggplot(long_data, aes(x = Value, y = mental_health_rating)) +
+  geom_point(alpha = 0.4, color = "darkblue") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  facet_wrap(~ Variable, scales = "free_x") +
+  labs(title = "Mental Health Rating vs. Various Factors",
+       x = "Value of Variable",
+       y = "Mental Health Rating")
+```
 
