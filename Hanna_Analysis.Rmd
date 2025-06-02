@@ -3,3 +3,59 @@ title: "Hanna_Analysis"
 output: html_document
 ---
 
+``` {r}
+library(tidyverse)
+library(dplyr)
+library(stringr)
+```
+
+``` {r}
+habits_df <- read_csv("student_habits_performance.csv")
+social_df <- read_csv("smmh.csv")
+
+habits_df_clean <- habits_df %>%
+  mutate(
+    age = as.numeric(age),
+    gender = tolower(trimws(gender))
+  ) %>%
+  filter(!is.na(age), !is.na(gender))
+
+social_df_clean <- social_df %>%
+  mutate(
+    age = as.numeric(`1. What is your age?`),
+    gender = tolower(trimws(`2. Gender`))
+  ) %>%
+  filter(!is.na(age), !is.na(gender))
+
+habits_indexed <- habits_df_clean %>%
+  group_by(age, gender) %>%
+  mutate(row_id = row_number()) %>%
+  ungroup()
+
+social_indexed <- social_df_clean %>%
+  group_by(age, gender) %>%
+  mutate(row_id = row_number()) %>%
+  ungroup()
+
+merged_df <- inner_join(
+  habits_indexed,
+  social_indexed,
+  by = c("age", "gender", "row_id")
+)
+
+merged_df <- merged_df %>%
+  select(-student_id, 
+         -netflix_hours,
+         -part_time_job,
+         -diet_quality,
+         -parental_education_level,
+         -extracurricular_participation,
+         -row_id,
+         -Timestamp, 
+         -`1. What is your age?`,
+         -`2. Gender`,
+         -`3. Relationship Status`,
+         -`5. What type of organizations are you affiliated with?`,
+         -`6. Do you use social media?`,
+         -`8. What is the average time you spend on social media every day?`)
+```
