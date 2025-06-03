@@ -15,55 +15,51 @@ library(stringr)
 habits_df <- read_csv("student_habits_performance.csv")
 social_df <- read_csv("smmh.csv")
 
-habits_df <- habits_df %>%
+habits_df_clean <- habits_df %>%
   mutate(
     age = as.numeric(age),
-    soc_range = cut(
-      social_media_hours,
-      breaks = c(-Inf, 1, 2, 3, 4, Inf),
-      labels = c("0-1 hours", "1-2 hours", "2-3 hours", "3-4 hours", "4+ hours"),
-      right = TRUE),
-    age_range = cut(
-      age,
-      breaks = c(-Inf, 17, 21, 25, Inf),
-      labels = c("<18", "18-21", "22-25", "26+"),
-      right = TRUE))
+    gender = tolower(trimws(gender))
+  ) %>%
+  filter(!is.na(age), !is.na(gender))
 
 social_df_clean <- social_df %>%
   mutate(
     age = as.numeric(`1. What is your age?`),
-    soc_hrs = tolower(trimws(`8. What is the average time you spend on social media every day?`)),
-    soc_num = as.numeric(str_extract(soc_hrs, "\\d+")),
-    soc_range = cut(
-      soc_num,
-      breaks = c(-Inf, 1, 2, 3, 4, Inf),
-      labels = c("0-1 hours", "1-2 hours", "2-3 hours", "3-4 hours", "4+ hours"),
-      right = TRUE),
-    age_range = cut(
-      age,
-      breaks = c(-Inf, 17, 21, 25, Inf),
-      labels = c("<18", "18-21", "22-25", "26+"),
-      right = TRUE))
+    gender = tolower(trimws(`2. Gender`))
+  ) %>%
+  filter(!is.na(age), !is.na(gender))
+
+habits_indexed <- habits_df_clean %>%
+  group_by(age, gender) %>%
+  mutate(row_id = row_number()) %>%
+  ungroup()
+
+social_indexed <- social_df_clean %>%
+  group_by(age, gender) %>%
+  mutate(row_id = row_number()) %>%
+  ungroup()
 
 merged_df <- inner_join(
-  habits_df %>% select(-gender),
-  social_df_clean,
-  by = c("soc_range", "age_range"))
+  habits_indexed,
+  social_indexed,
+  by = c("age", "gender", "row_id")
+)
 
 merged_df <- merged_df %>%
-  select(-age.x, 
-         -age.y, 
-         -student_id, 
-         -soc_hrs, 
-         -soc_num, 
+  select(-student_id, 
+         -netflix_hours,
+         -part_time_job,
+         -diet_quality,
+         -parental_education_level,
+         -extracurricular_participation,
+         -row_id,
          -Timestamp, 
          -`1. What is your age?`,
          -`2. Gender`,
          -`3. Relationship Status`,
          -`5. What type of organizations are you affiliated with?`,
          -`6. Do you use social media?`,
-         -`8. What is the average time you spend on social media every day?`,
-         -parental_education_level)
+         -`8. What is the average time you spend on social media every day?`)
 ```
 
 ```{r}
@@ -71,11 +67,11 @@ head(merged_df)
 names(merged_df)
 ```
 
-## Research Question: Is there a correlation between a student’s mental health and their exam score?
+## Research Question: Is there a correlation between a student’s mental health and their exam score? Are there any factors that contribute to mental health?
 ```{r}
 ggplot(merged_df, aes(x = mental_health_rating, y = exam_score)) +
-  geom_point(color = "steelblue",size = 0.3) +
-  geom_smooth(method = "lm", se = TRUE, color = "black") +
+  geom_point(color = "steelblue", size = 1, alpha = 0.65) +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
   scale_x_continuous(breaks = 1:10, limits = c(1, 10)) +
   labs(
     title = "Relationship Between Mental Health Rating and Exam Score",
@@ -83,38 +79,12 @@ ggplot(merged_df, aes(x = mental_health_rating, y = exam_score)) +
     y = "Exam Score")
 ```
 
-### Doing some experimenting here and creating a heatmap
 ```{r}
-install.packages("corrplot")
+cor_val <- cor(merged_df$mental_health_rating, merged_df$exam_score, use = "complete.obs", method = "pearson")
+
+# View result
+print(cor_val)
 ```
-
-
-```{r}
-library(corrplot)
-
-vars <- c("mental_health_rating", "sleep_hours", "exercise_frequency",
-          "social_media_hours", "exam_score", "attendance_percentage", "study_hours_per_day")
-subset_data <- merged_df[ , vars]
-subset_data <- na.omit(subset_data)
-
-head(subset_data)
-
-cor_matrix <- cor(subset_data, method = "pearson")
-corrplot(cor_matrix, 
-         method = "color", 
-         type = "lower",
-         addCoef.col = "black", 
-         tl.col = "black", 
-         tl.srt = 45)
-```
-How to interpret the data:
-Greater than 1 - positive correlation
-0 - no relationship
-Lower than 1 - negative correlation
-
-i.e
-Exam score and social media hours has a negative correlation of -0.16, meaning that more social media hours means a correlation of a lower exam score
-Exam score and mental health has a positive correlation of 0.32, meaning that the higher the mental health score, the better students do. 
 
 ```{r}
 vars <- c("sleep_hours", "exercise_frequency", "social_media_hours", 
@@ -122,39 +92,36 @@ vars <- c("sleep_hours", "exercise_frequency", "social_media_hours",
 
 long_data <- merged_df %>%
   select(all_of(vars), mental_health_rating) %>%
-  pivot_longer(cols = all_of(vars), names_to = "Variable", values_to = "Value")
+  pivot_longer(cols = all_of(vars), names_to = "Variable", values_to = "val")
 
-# Step 2: Group by variable and value, then calculate mean mental health
-avg_long <- long_data %>%
-  group_by(Variable, Value) %>%
-  summarise(avg_mental_health = mean(mental_health_rating, na.rm = TRUE), .groups = "drop")
-
-# Step 3: Line plot faceted by variable
-ggplot(avg_long, aes(x = Value, y = avg_mental_health)) +
-  geom_line(color = "black", size = 0.5) +
-  geom_point(color = "blue", size = 0.6) +
-  facet_wrap(~ Variable, scales = "free_x") +
-  labs(title = "How Mental Health Rating Varies by Different Factors",
-       x = "Value of Variable",
-       y = "Average Mental Health Rating")
-```
-
-
-```{r}
-vars <- c("sleep_hours", "exercise_frequency", "social_media_hours", 
-          "study_hours_per_day", "attendance_percentage", "exam_score")
-
-long_data <- merged_df %>%
-  select(all_of(vars), mental_health_rating) %>%
-  pivot_longer(cols = all_of(vars), names_to = "Variable", values_to = "Value")
-
-# Step 2: Plot with correlation/trend lines
-ggplot(long_data, aes(x = Value, y = mental_health_rating)) +
-  geom_point(alpha = 0.4, color = "darkblue") +
-  geom_smooth(method = "lm", color = "red", se = FALSE) +
+ggplot(long_data, aes(x = val, y = mental_health_rating)) +
+  geom_point(alpha = 0.4, color = "steelblue") +
+  geom_smooth(method = "lm", color = "black", se = FALSE) +
   facet_wrap(~ Variable, scales = "free_x") +
   labs(title = "Mental Health Rating vs. Various Factors",
        x = "Value of Variable",
        y = "Mental Health Rating")
+
+# Instead of plotting the scatter plots, plot the regression line for each factor instead
 ```
 
+
+```{r}
+merged_df %>%
+  mutate(feel_depressed = factor(`18. How often do you feel depressed or down?`,
+                                 levels = 1:5,
+                                 labels = c("1\nNot at all", "2", "3", "4", "5\nExtremely"))) %>%
+  ggplot(aes(x = feel_depressed, y = exam_score)) +
+  geom_violin(fill = "steelblue", alpha = 0.6) +
+  geom_jitter(width = 0.2, alpha = 0.4, color = "darkblue") +
+  labs(title = "Exam Score vs. Feeling Depressed",
+       x = "How often do you feel depressed or down?",
+       y = "Exam Score")
+```
+- seeking help
+- getting medication
+
+
+```{r}
+names(merged_df)
+```
