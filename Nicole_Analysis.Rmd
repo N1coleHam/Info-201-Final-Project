@@ -63,8 +63,10 @@ merged_df <- merged_df %>%
 ```
 
 ```{r}
-head(merged_df)
-names(merged_df)
+dim(habits_df)
+names(habits_df)
+dim(social_df)
+names(social_df)
 ```
 
 ## Research Question: Is there a correlation between a student’s mental health and their exam score? Are there any factors that contribute to mental health?
@@ -85,6 +87,19 @@ cor_val <- cor(merged_df$mental_health_rating, merged_df$exam_score, use = "comp
 # View result
 print(cor_val)
 ```
+```{r}
+merged_df %>%
+  mutate(feel_depressed = factor(`18. How often do you feel depressed or down?`,
+                                 levels = 1:5,
+                                 labels = c("1\nNot at all", "2", "3", "4", "5\nExtremely"))) %>%
+  ggplot(aes(x = feel_depressed, y = exam_score)) +
+  geom_violin(fill = "steelblue", alpha = 0.6) +
+  geom_jitter(width = 0.2, alpha = 0.4, color = "darkblue") +
+  labs(title = "Exam Score vs. Feeling Depressed",
+       x = "How often do you feel depressed or down?",
+       y = "Exam Score")
+```
+
 
 ```{r}
 vars <- c("sleep_hours", "exercise_frequency", "social_media_hours", 
@@ -101,23 +116,11 @@ ggplot(long_data, aes(x = val, y = mental_health_rating)) +
   labs(title = "Mental Health Rating vs. Various Factors",
        x = "Value of Variable",
        y = "Mental Health Rating")
-
-# Instead of plotting the scatter plots, plot the regression line for each factor instead
 ```
 
 
-```{r}
-merged_df %>%
-  mutate(feel_depressed = factor(`18. How often do you feel depressed or down?`,
-                                 levels = 1:5,
-                                 labels = c("1\nNot at all", "2", "3", "4", "5\nExtremely"))) %>%
-  ggplot(aes(x = feel_depressed, y = exam_score)) +
-  geom_violin(fill = "steelblue", alpha = 0.6) +
-  geom_jitter(width = 0.2, alpha = 0.4, color = "darkblue") +
-  labs(title = "Exam Score vs. Feeling Depressed",
-       x = "How often do you feel depressed or down?",
-       y = "Exam Score")
-```
+
+
 - seeking help
 - getting medication
 
