@@ -71,6 +71,7 @@ RQ1: What is the factor that contributes to the greatest academic performance?
 
 ```{r}
 # Multiple Linear Regression using ggcorrplot
+
 library(ggcorrplot)
 
 model <- lm(exam_score ~ study_hours_per_day + social_media_hours + attendance_percentage + sleep_hours +
