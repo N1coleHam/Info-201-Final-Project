@@ -118,13 +118,3 @@ ggplot(long_data, aes(x = val, y = mental_health_rating)) +
        y = "Mental Health Rating")
 ```
 
-
-
-
-- seeking help
-- getting medication
-
-
-```{r}
-names(merged_df)
-```
