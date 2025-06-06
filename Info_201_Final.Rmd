@@ -1,19 +1,103 @@
 ---
-title: "INFO 201 Final Project: "
+title: "INFO 201 Final Project"
 author: "Nicole Ham, Ruslana Korolov, Hanna Pan"
-date: "`6/6/2025`"
+date: "`r Sys.Date()`"
 output: html_document
 ---
 
+## Abstract
+
+This project explores how university students’ daily habits impact academic performance and mental health. Using two datasets from Kaggle, we merged one simulated dataset on student habits and academic performance with a survey on social media and mental health. After cleaning and aligning the data by age and gender, we conducted regression analysis, correlation testing, and random forest modeling to investigate our three research questions. We found that study hours were the strongest predictor of exam performance, with mental health also playing a meaningful role. Social media usage, on the other hand, was negatively associated with academic performance but showed no clear correlation with mental health. Overall, our findings suggest that consistent study habits and emotional well-being are key to a student’s success, while the role of social media is much more complex and subjective. 
+
+## Introduction
+
+University students often struggle to balance the demands of academic performance and mental well-being. In recent years, our attention has turned to studying how lifestyle habits—such as sleep, study routines, and screen time—play a role in shaping these outcomes. Such research has shown that sleep deprivation, excessive social media use, and poor time management can negatively impact both a student’s grade and mental health. However, it’s unclear which factor(s) have a more substantial impact on these outcomes, or if these conclusions are a result of multiple habitual interactions.
+
+Because of these ambiguities, our goal is to investigate which student habits are most strongly associated with academic success and mental health outcomes. Specifically, we aim to answer the following research questions:
+
+1. What factor contributes the most to academic performance?
+2. How does the amount of time a student spends on social media impact their mental health?
+3. Is there a correlation between a student’s mental health and their exam scores?
+
+To explore these questions, we will analyze two publicly available datasets from Kaggle: one examining the relationship between student habits and academic performance, and another analyzing the impact of social media use on mental health. These datasets allow us to study a range of behavioral variables such as sleep hours, study time, and social media activity, and to assess how these variables correlate with outcomes like emotional well-being and exam scores.
+
+Our findings are particularly relevant for university students who want to optimize their routines for academic and personal health. Additionally, our work may be valuable to academic advisors, campus wellness staff, and educators seeking evidence-based insights to inform policy, outreach, and support services. Ultimately, our analysis contributes to a broader understanding of how everyday behaviors shape student success and mental health—two cornerstones of the college experience.
+
+## Data Source
+
+Our project utilizes two datasets sourced from Kaggle: [Student Habits vs Academic Performance](https://www.kaggle.com/datasets/jayaantanaath/student-habits-vs-academic-performance) and [Social Media and Mental Health](https://www.kaggle.com/datasets/souvikahmed071/social-media-and-mental-health). We chose these datasets because they directly aligned with our research questions exploring the relationship between student habits, academic outcomes, and mental well-being.
+
+The Student Habits vs Academic Performance dataset is a simulated dataset that explores how various lifestyle habits—sleep hours, study times, social media use, and exercise, to name a few—correlate with exam scores. Although this is not sourced from actual students, the structure of this data still reflects realistic patterns of behavior that can help us analyze broader trends and hypotheses. 
+
+The data in the Social Media and Mental Health dataset was collected as part of a university Statistics course project. The data was gathered through surveys aimed at examining the impact of social media usage on mental health. This dataset contains columns such as hours spent on social media and many self-reported mental health ratings based on social media usage.
+
+Both datasets are free to the public and are available for download through Kaggle. The Student Habits dataset is licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0), which allows for reuse, modification, and distribution, including for commercial purposes, as long as proper accreditation is given. The Social Media and Mental Health dataset is licensed under the [Open Data Commons Open Database License (ODbL) v1.0](https://opendatacommons.org/licenses/odbl/1-0/), which permits users to freely share and adapt the data under the condition that any derived data is also shared under the same license.
+
+We chose these datasets because they possess relevant variables for investigating our three primary research questions. Together, these datasets allow us to explore how daily habits may shape both the academic and emotional well-being of university students.
+
+## Data
+
+Our first dataset, Student Habits vs Academic Performance, contains 1000 rows and 16 columns. Each row represents one simulated university student with personal information about their habits, mental well-being, and test scores. Overall, this dataset is very clean and has no missing values.
+
+Key variables that are relevant to our research include:
+* `age` (numeric): age of the student
+
+* `gender` (categorical): male, female, or other
+
+* `study_hours_per_day` (numeric): average daily study time (in hours)
+
+* `social_media_hours` (numeric): daily time spent on social media (in hours)
+
+* `attendance_percentage` (numeric): class attendance (0-100%)
+
+* `sleep_hours` (numeric): daily average time slept (in hours)
+
+* `exercise_frequency` (numeric): number of times exercise per week
+
+* `internet_quality` (categorical): poor, average, or good internet quality
+
+* `mental_health_rating` (numeric): self-reported mental health score on a scale of 1-10
+
+* `exam_score` (numeric): final exam score (0-100)
+
+Our second dataset, Social Media and Mental Health, contains 481 rows and 21 columns. Each row represents an individual’s reported social media usage, mental health rating, and other variables. This dataset does contain some missing values, but not an outstanding amount that would severely affect the quality of the analysis.
+
+Key variables for this dataset include:
+* `1. What is your age?` (numeric): age of the student
+
+* `2. Gender` (categorical): male, female, or other
+
+* `8. What is the average time you spend on social media?` (categorical): daily average time spent on social media (in hours)
+
+* `11. Do you feel restless if you haven’t used Social media in a while?` (numerical): self-reported score on a scale of 1-5
+
+* `14. Do you find it difficult to concentrate on things?` (numerical): self-reported score on a scale of 1-5
+
+* `18. How often do you feel depressed or down?` (numerical): self-reported score on a scale of 1-5
+
 ## Method
 
-```{r}
+We planned to merge the two datasets together for our analysis. Because these datasets were created independently and had no unique key to merge on, our first step was to clean and align them for a conceptual merge. 
+
+Before settling on the (`age`, `gender`, `row_id`) join, we initially attempted to merge the datasets using age and average daily social media usage as keys. However, this resulted in a many-to-many Cartesian join, which produced a merged dataset with over 28,000 rows—far exceeding the size of either original dataset. This clearly indicated an incorrect duplication due to non-unique combinations of age and social media usage levels. Recognizing this issue, we revised our approach to merge based on more stable attributes: age and gender.
+
+For both datasets, we standardized the `age` and `gender` variables by converting age to numeric values and cleaning inconsistencies in gender by trimming whitespaces and converting all entries to lowercase. We then filtered out rows with missing age and gender values.
+
+Since there was no direct key we could merge on, we used a group-wise indexing strategy: within each (age, gender) group, we added a `row_id` to both datasets using the function `row_number()`. This allowed us to preserve the one-to-one pairing within subgroups, preventing any accidental duplication of values. We then merged the datasets using an inner join on `age`, `gender`, and `row_id`.
+
+After successfully merging the datasets, we removed variables that were irrelevant or redundant to our analysis, such as identifiers (`student_id`, `Timestamp`, etc.) and niche lifestyle details (`netflix_hours`, `diet_quality`, `part_time_job`, etc.).
+
+Although we fixed our original issue with the inner join by using `age`, `gender`, and `row_id` to merge instead, it may have introduced artificial pairings that might not be true to nature. We recognize the limitations of our data, and thus were careful and thorough in evaluating any possible relationships that arose in our analysis. 
+
+In the end, our final merged dataset allowed us to explore all three of our research questions by drawing on variables from the original datasets. 
+
+```{r echo=FALSE, warning=FALSE}
 library(tidyverse)
 library(dplyr)
 library(stringr)
 ```
 
-```{r}
+```{r echo=FALSE, warning=FALSE}
 habits_df <- read_csv("student_habits_performance.csv")
 social_df <- read_csv("smmh.csv")
 
@@ -62,19 +146,35 @@ merged_df <- merged_df %>%
          -`5. What type of organizations are you affiliated with?`,
          -`6. Do you use social media?`,
          -`8. What is the average time you spend on social media every day?`)
+
+head(merged_df, 5)
 ```
 
+For academic performance analysis:
 
-```{r}
-head(merged_df)
-names(merged_df)
-```
+* `sleep_hours`, `study_hours_per_day`, `attendance_percentage`, and `exam_score`
+
+For mental health and social media usage:
+
+* `mental_health_rating`, `social_media_hours`, `gender`
+
+For linking mental health to academic performance:
+
+* `mental_health_rating`, `mental_health_rating`, `14. Do you find it difficult to concentrate on things?`, `exam_score`
+
+As a general overview, we conducted exploratory analysis through grouped summaries, scatter and line plots, Random Forest modeling, and box plots. We also calculated correlation coefficients and used basic linear regression models to explore potential relationships between such variables. 
+
+But overall, our cleaning and merging strategy enabled us to build a cohesive dataset for investigating how daily habits and digital behaviors relate to students’ academic and emotional well-being.
 
 ## Results
 
 ### RQ1: What is the factor that contributes to the greatest academic performance?
 
-```{r}
+To identify the factor that contributes most significantly to academic success, we analyzed our merged dataset using linear regression and a random forest machine learning model.
+
+#### Linear Regression Findings
+
+```{r echo=FALSE, warning=FALSE}
 # Multiple Linear Regression using ggcorrplot
 
 library(ggcorrplot)
@@ -86,7 +186,18 @@ model <- lm(exam_score ~ study_hours_per_day + social_media_hours + attendance_p
 summary(model)
 ```
 
-```{r}
+The multiple regression model, which has an adjusted R^2 of 0.892, gave us multiple relationships between exam scores and other variables.
+
+* Study hours per day has a coefficient of +9.30 with a p value that is < 2e-16. This indicates that study time is strongly, and statistically significant, associated with higher exam scores.
+
+* Mental health rating has a coefficient of +1.93 and a p value that is also < 2e-16. While the coefficient is less than that of study time, it is still a significant positive indicator of exam performance. This suggests a relationship between better mental health and better exam scores.
+
+* Exercise frequency, sleep hours, and attendance percentage all had a positive association with exam scores, though not as strong as study time and mental health.
+
+* Social media hours has a coefficient of -2.53 and a p value that is < 2e-16, which implies a negative correlation between time spent on social media and a resulting exam score. This suggests more time spent on social media negatively affects exam performance.
+
+#### Random Forest Findings
+```{r echo=FALSE, warning=FALSE}
 # Feature Importance via Machine Learning
 library(randomForest)
 
@@ -103,23 +214,22 @@ importance(rf_model)
 varImpPlot(rf_model)
 ```
 
-```{r}
-# Correlation Heatmap using RF model
-importance_df <- as.data.frame(importance(rf_model)) %>%
-  rownames_to_column("variable") %>%
-  arrange(desc(`%IncMSE`))
+The Random Forest model gives us two metrics, %IncMSE and IncNodePurity, to help us assess the importance of different features in regards to exam score. %IncMSE is the percent increase in mean squared error, which looks at how much worse the model performs when a variable's values are randomly shuffled. This metric is useful for understanding the predictive power of a given element. IncNodePurity is the increase in node purity, which looks at how much a variable improves the purity of the nodes in the decision trees. This metric is useful for understanding how much a given variable improves the tree splits.
 
-ggplot(importance_df, aes(x = reorder(variable, `%IncMSE`), y = `%IncMSE`)) +
-  geom_col(fill = "skyblue") +
-  coord_flip() +
-  labs(title = "Variable Importance (%IncMSE)",
-       x = "Variable", y = "% Increase in MSE if Removed")
+* In both metrics, study hours per day was the most important variable. Study time had a substantial impact on model impact when omitted and on node purity when used for splitting.
 
-```
+* Mental health ranked second in importance, which suggests a relationship between mental health and exam performance. This relationship reinforces its importance in regards to excelling academically. 
+
+* While social media had a lower importance, it still suggests a negative correlation between higher time spent on social media and academic performance.
+
+Overall, study time is the most critical factor in predicting academic performance. Additionally, mental health support and reducing social media time can benefit academic performance.
 
 ### RQ2: How does the amount of time an individual spends on social media and the impact it has on their mental health?
+#### Correlation Testing Findings
 
-``` {r}
+To determine if there was any relationship between social media usage and mental health rating, we plotted the two variables in both a scatter plot and line plot to visualize the trend. 
+
+``` {r echo=FALSE, warning=FALSE}
 # trying to find correlation between social media hours and mental health rating
 
 # plot relationship to see trend
@@ -154,7 +264,15 @@ cor.test(merged_df$social_media_hours, merged_df$mental_health_rating, use = "co
 
 ```
 
-``` {r}
+Immediately, the plots showed a very scattered and unorganized view, with no clear positive or negative correlation. Additionally, the linear model we fitted to the scatter plot—the flat blue line through the graph—did not reveal a significant relationship between daily social media usage and self-reported mental health rating.
+
+To verify this, we also performed a correlation test, which we found to be a 0.002 correlation, suggesting that the association between these variables is either weak or potentially non-linear.
+
+#### Other Interactive Models
+
+While we were not able to make any plausible conclusions, we decided to further explore other subtle interactions beyond this simple correlation. We decided to group social media usages by low (0-1 hours), medium (1-3 hours), and high (3+ hours) categories to see if binning could reveal some more information regarding our research question.
+
+``` {r echo=FALSE, warning=FALSE}
 # Trying to see if grouping hours by usage (low, medium, high) will help us find some sort of trend
 grouping_hours <- merged_df %>%
   mutate(usage_group = case_when(
@@ -176,7 +294,11 @@ ggplot(grouping_hours, aes(x = usage_group, y = mental_health_rating, fill = usa
 
 ```
 
-``` {r}
+Looking at these box plots side-by-side, we can see that those who reported lower hours of using social media had an overall higher mental health rating. Right off the bat, it seems easy to infer that low usage correlates with better mental health, but the caveat is that those who reported medium and high social media hours seem to have similar mental health ratings still. Because these distinctions are ambiguous, it is still difficult to make any conclusions on whether or not social media usage affects mental health.
+
+Beyond binning the social media hours, we also tried to explore other potential factors that might affect mental health. We analyzed if gender might show us any trends between social media usage and mental health.
+
+``` {r echo=FALSE, warning=FALSE}
 # Testing if there's a trend between usage and gender with mental health
 
 test_with_gender <- merged_df %>%
@@ -211,8 +333,13 @@ ggplot(merged_df, aes(x = social_media_hours, y = mental_health_rating, color = 
 
 ```
 
+Once again, looking at this plot, there seems to be little to no correlation even gender wise. The trend line is the slightest bit positive for males and the slightest bit negative for females, but there is not nearly enough deviation to confidently confirm a relationship—only speculation.
+
 ### RQ3: Is there a correlation between a student’s mental health and their exam score? Are there any factors that contribute to mental health?
-```{r}
+
+Addressing the first part of this research question, we wanted to explore the relationship between students’ mental health and their academic performance. To observe if there is a correlation between a student’s mental health and exam score, we created a scatterplot with a linear regression line that displayed exam performance by mental health rating. For additional context for the rest of the question, mental health ratings scale from 1 to 10, 1 representing poor mental health while 10 represents excellent mental health, and each of the ratings is self-reported by each person. 
+
+```{r echo=FALSE, warning=FALSE}
 ggplot(merged_df, aes(x = mental_health_rating, y = exam_score)) +
   geom_point(color = "steelblue", size = 1, alpha = 0.65) +
   geom_smooth(method = "lm", se = FALSE, color = "black") +
@@ -223,7 +350,11 @@ ggplot(merged_df, aes(x = mental_health_rating, y = exam_score)) +
     y = "Exam Score")
 ```
 
-```{r}
+The Pearson correlation coefficient was calculated to be 0.345, which suggests that there is a weak to moderate positive correlation between mental health and exam performance. While we have to note that this correlation is not strong, there is still an association that suggests that students with higher mental health ratings tend to do better on exams. The positive linear slope demonstrates this, which suggests that mental health plays a role in academic success. While this result doesn’t imply causation, it highlights a potential link between mental health and academic outcomes that is worth further exploring. Even if there is not a strong correlation, we can still account that mental health is a possible factor for affecting exam scores. 
+
+To complement the regression analysis, we also investigated how exam performance varies with self-reported feelings of depression. Each student was asked, “How often do you feel depressed or down?”, and responses ranged from 1 (Not at all) to 5 (Extremely). For this, we created a violin plot visualizing the distribution of exam scores for each response category. The width of each violin represents higher density at different score levels, where more people had exam scores in that range. 
+
+```{r echo=FALSE, warning=FALSE}
 cor_val <- cor(merged_df$mental_health_rating, merged_df$exam_score, use = "complete.obs", method = "pearson")
 
 # View result
@@ -242,8 +373,13 @@ merged_df %>%
        y = "Exam Score")
 ```
 
+These shapes and spread of the distributions suggests a potential trend based on our responses, which was that students who reported 1 on their depression had a higher, tighter distribution compared to students who reported 5 on their depression, which has more spread and lower density in exam scores. While the pattern in responses 2, 3, and 4 are not as linear, the contrast between the two extremities does indicate that there is a possibility that students reporting more depressive symptoms face more academic struggles. 
 
-```{r}
+Using these results, it builds off of how a factor of mental health such as depression can play a role in academic success. We can support the idea of mental health being a factor of exam score, however we can’t necessarily say that it is the sole factor of influencing exam scores as seen in RQ1.
+
+With the moderate correlation between exam scores, we then turned our attention to other daily routines and habits that could potentially influence mental health.  Factors such as attendance percentage, exercise frequency, sleep hours, and study hours per day, with exam scores and social media usage from RQ2 as comparison. 
+
+```{r echo=FALSE, warning=FALSE}
 vars <- c("sleep_hours", "exercise_frequency", "social_media_hours", 
           "study_hours_per_day", "attendance_percentage", "exam_score")
 
@@ -260,3 +396,32 @@ ggplot(long_data, aes(x = val, y = mental_health_rating)) +
        y = "Mental Health Rating")
 ```
 
+Despite having expectations that these lifestyle factors might contribute to a student’s mental health, these plots have little to no perceivable relationship in most cases. The variables observed are largely scattered and uncorrelated as indicated with the nearly horizontal regression lines. Even if we try to find a correlation such as sleep hours and study hours per day, the relationship is not strong enough to define a connection between mental health rating and other various daily factors. It’s possible that the effects of the routines are more nuanced or influenced by other outside factors that are not accounted for in our current analysis. 
+
+## Discussion
+
+### RQ1: What is the factor that contributes to the greatest academic performance?
+
+Our analysis using both linear regression and a random forest model consistently found that study hours per day is the strongest predictor of exam performance. Linear regression revealed that increased study time is significantly associated with higher exam scores (coefficient = +9.30, p < 2e-16). Mental health rating was the next strongest contributor (coefficient = +1.93, p < 2e-16), followed by smaller positive associations from exercise frequency, sleep hours, and attendance percentage. Social media hours, on the other hand, had a negative coefficient (-2.53, p < 2e-16), suggesting that more time on social media may hinder academic performance. The random forest model supported these results, ranking study time and mental health as the top two most important features for predicting exam scores.
+
+### RQ2: How does the amount of time a student spends on social media impact their mental health?
+
+The initial scatterplots and correlation analysis revealed no strong linear relationship between social media usage and mental health rating (correlation = 0.002). To explore further, we binned social media use into low, medium, and high categories. While students with low usage reported slightly better mental health on average, the differences between medium and high groups were minimal. We also looked at gender-specific trends and again found no meaningful correlation. These results suggest that time spent on social media by itself, may not strongly impact mental health—though more complex interactions or non-linear effects could be a factor.
+
+### RQ3: Is there a correlation between a student’s mental health and their exam score? What about other daily routines?
+
+With a correlation value of 0.345, this means that there’s a weak to moderate positive relationship between mental health rating and exam scores. This suggests that those who reported having better mental health do better academically. Student ranks on depressive symptoms also reflect this trend, as those who say they have less depressive symptoms tend to have higher exam scores. However when it comes to the correlation between mental well-being and other lifestyle factors, there was virtually zero connection to each other. While these factors may have some form of contribution to mental health, overall this data doesn’t show anything meaningful enough to reach that conclusion. 
+
+### Caveats and Limitations
+
+Despite our findings, we want to acknowledge the limitations of our analysis. With the low correlations observed in our findings, this restricts the ability to definitively reach a conclusion due to the complexities surrounding mental health. We need to consider other unreported factors such as individuals receiving therapy, taking medication, experiencing family or financial stress that could have obscured our insight into the factors we looked at. 
+
+Another limitation is the nature of how the data was collected. Self-reporting mental health is a subjective matter, and individual interpretations of a scale can vary. Without a standardized assessment, it becomes difficult to compare responses among participants as responses can be influenced by personal bias or cultural perception on mental health. 
+
+Future research involving assessments of mental health should thoroughly consider the approach in collecting data. For example, rather than self-reporting a value, an actual assessment of a mental health test consisting of multiple questions can be administered to improve accuracy and provide more standardized responses among participants. An assessment that carried across multiple weeks also could track lifestyle changes over time, which can provide more accurate insight into mental health and academic performance. 
+
+## Summary
+
+Overall, our analysis features the complex relationship between academic performance and mental health based on daily routines. When considering factors that contribute to academic success, study times and mental well-being were the most influential. This reinforces the importance of consistent study habits and supporting individual emotional well-being. While social media usage was negatively associated with exam scores, its impact on mental health showed no relationship. 
+
+These findings emphasize that academic outcomes are shaped by both behavioral habits and emotional well-being. Supporting students academically requires more than just promoting study time—it also means creating environments that support mental health and reduce unnecessary digital distractions. While limitations in our data prevented conclusions about what drives mental health, our research can lay the groundwork for more rigorous, standardized approaches for retrieving data in the future.
